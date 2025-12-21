@@ -1,13 +1,13 @@
-
 import os
 from SementicSearcher import SementicSearcher
 from prompt_template.process_one_paper import get_deep_reference_prompt
 import fitz
 
+from config import settings
 
 
 def save_first_20_pages(input_pdf_path):
-    current_dir = './dataset_temple' # your dataset_temple path
+    current_dir = str(settings.paths.dataset_temple_path)
     output_folder = os.path.join(current_dir, 'cutpdf')
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)

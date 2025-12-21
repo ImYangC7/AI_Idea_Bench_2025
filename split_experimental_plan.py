@@ -7,12 +7,10 @@ from prompt_template.compare_open import split_motivation_experiment_plan
 from LLM.Deepseek_v5 import Deepseek
 import os
 
-
-import codecs
-import json
-import os
 from multiprocessing import Pool
 from tqdm import tqdm
+
+from config import settings
 
 def get_content_between_a_b(start_tag, end_tag, text):
     extracted_text = ""
@@ -59,22 +57,20 @@ def save_json(data, file_path):
 
 
 if __name__ == "__main__":
-    api_key_deepseek = "" 
-    base_url_deepseek = "" 
-    model_api = Deepseek([api_key_deepseek], base_url_deepseek)
+    model_api = Deepseek(
+        [settings.api.deepseek_api_key],
+        settings.api.deepseek_base_url,
+    )
 
-
-
-#########################################################################################################################################        
-
-
-    AI_Scientist_path = "./model_output/AI-Scientist/final_ideas.json"
+    # AI-Scientist 评估
+    ai_scientist_path = settings.paths.ai_scientist_output_path
+    AI_Scientist_path = str(ai_scientist_path / "final_ideas.json")
     with codecs.open(AI_Scientist_path, "r") as f:
         AI_Scientist_ = json.load(f)
         f.close()
 
     AI_Scientist = []
-    AI_Scientist_final_path = "./model_output/AI-Scientist/final_ideas_splited_feasibility.json"
+    AI_Scientist_final_path = str(ai_scientist_path / "final_ideas_splited_feasibility.json")
     for results in AI_Scientist_:
         fianl_result = []
         for result in results['model_result']:

@@ -1,10 +1,15 @@
 import json
 import os
 import re
+import sys
 
 import anthropic
 import backoff
 import openai
+
+# 添加父目录到路径以导入 config
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+from config import settings
 
 MAX_NUM_TOKENS = 4096
 
@@ -302,34 +307,36 @@ def create_client(model):
         client_model = model.split("/")[-1]
         print(f"Using Vertex AI with model {client_model}.")
         return anthropic.AnthropicVertex(), client_model
-    # elif 'gpt' in model:
-    #     print(f"Using OpenAI API with model {model}.")
-    #     return openai.OpenAI(), model
     elif model in ["o1-preview-2024-09-12", "o1-mini-2024-09-12"]:
         print(f"Using OpenAI API with model {model}.")
         return openai.OpenAI(), model
     elif model == "deepseek-coder-v2-0724":
         print(f"Using OpenAI API with {model}.")
+        api_key = settings.api.deepseek_api_key or os.environ.get("DEEPSEEK_API_KEY", "")
         return openai.OpenAI(
-            api_key=os.environ["DEEPSEEK_API_KEY"],
+            api_key=api_key,
             base_url="https://api.deepseek.com"
         ), model
     elif model == "deepseek":
         print(f"Using OpenAI API with {model}.")
+        api_key = settings.api.deepseek_api_key or os.environ.get("DEEPSEEK_API_KEY", "")
         return openai.OpenAI(
-            api_key=os.environ["DEEPSEEK_API_KEY"],
+            api_key=api_key,
             base_url="https://api.deepseek.com"
         ), model
     elif model == "gpt-4o-2024-11-20":
         print(f"Using OpenAI API with {model}.")
+        api_key = settings.api.gpt4o_api_key or os.environ.get("GPT4o_KEY", "")
+        base_url = settings.api.gpt4o_base_url or os.environ.get("GPT4o_url", "")
         return openai.OpenAI(
-            api_key=os.environ["GPT4o_KEY"],
-            base_url=os.environ["GPT4o_url"]
+            api_key=api_key,
+            base_url=base_url
         ), model
     elif model == "llama3.1-405b":
         print(f"Using OpenAI API with {model}.")
+        api_key = settings.api.openrouter_api_key or os.environ.get("OPENROUTER_API_KEY", "")
         return openai.OpenAI(
-            api_key=os.environ["OPENROUTER_API_KEY"],
+            api_key=api_key,
             base_url="https://openrouter.ai/api/v1"
         ), "meta-llama/llama-3.1-405b-instruct"
     else:

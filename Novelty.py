@@ -8,6 +8,8 @@ from sentence_transformers import SentenceTransformer
 from statistics import mean
 import os
 
+from config import settings
+
 
 def get_content_between_a_b(start_tag, end_tag, text):
     extracted_text = ""
@@ -50,7 +52,7 @@ def save_json(data, file_path):
 
 if __name__ == "__main__":
 
-    cited_paper_conten_path = "./dataset_temple/target_paper_data_w_hd_cd.json"
+    cited_paper_conten_path = str(settings.paths.target_paper_data_w_hd_cd_path)
     if os.path.exists(cited_paper_conten_path):
         with codecs.open(cited_paper_conten_path, 'r', encoding='utf-8') as file:
             cited_papers_data_raw = json.load(file)
@@ -61,7 +63,7 @@ if __name__ == "__main__":
     for data_ in cited_papers_data_raw:
 
         curren_index_cited_paper_conten = {}
-       
+
         for data in data_["model_result"]:
             cited_papers_data_all[data['paper_path']] = data['model_result']
 
@@ -69,9 +71,7 @@ if __name__ == "__main__":
 
         cited_papers_data_index[data_['index']] = curren_index_cited_paper_conten
 
-
-
-    topic_path = "./dataset_temple/target_paper_data_w_hd_cd.json"
+    topic_path = str(settings.paths.target_paper_data_w_hd_cd_path)
     with codecs.open(topic_path, "r") as f:
         topics_ = json.load(f)
         f.close()  
@@ -88,16 +88,16 @@ if __name__ == "__main__":
 
 
     model = SentenceTransformer('all-MiniLM-L6-v2')
-#########################################################################################################################################
 
-
-    AI_Scientist_path = "./model_output/AI-Scientist/final_ideas.json"
+    # AI-Scientist 评估
+    ai_scientist_path = settings.paths.ai_scientist_output_path
+    AI_Scientist_path = str(ai_scientist_path / "final_ideas.json")
     with codecs.open(AI_Scientist_path, "r") as f:
         AI_Scientist_ = json.load(f)
         f.close()
 
     AI_Scientist = []
-    AI_Scientist_final_path = "./model_output/AI-Scientist/Novelty.json"
+    AI_Scientist_final_path = str(ai_scientist_path / "Novelty.json")
     for results in AI_Scientist_:
         fianl_result = []
 

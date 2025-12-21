@@ -13,13 +13,14 @@ from ai_scientist.llm import get_response_from_llm, extract_json_between_markers
 
 
 import sys
-sys.path.append('../../code/')  # change to your code path
+sys.path.append('../')
 from prompt_template.process_one_paper import get_one_paper_input
 
 from extract_one_paper_conten import get_one_paper_conten
 
 
 from LLM.Deepseek_v3 import Deepseek
+from config import settings
 
 
 
@@ -467,49 +468,37 @@ def ensure_folder_exists(json_file_path):
 
 
 if __name__ == "__main__":
-    
 
-    os.environ["GPT4o_KEY"] = ''
-
-    os.environ["GPT4o_url"] = ''
-
-    os.environ["S2_API_KEY"] = ''
-
+    # 从配置加载 API keys
+    os.environ["GPT4o_KEY"] = settings.api.gpt4o_api_key
+    os.environ["GPT4o_url"] = settings.api.gpt4o_base_url
+    os.environ["S2_API_KEY"] = settings.api.semantic_scholar_api_key
 
     client, client_model = create_client('gpt-4o-2024-11-20')
 
+    model_api = Deepseek(
+        [settings.api.deepseek_api_key],
+        settings.api.deepseek_base_url,
+    )
 
-    api_key_deepseek = ''
-    base_url_kimi = ''
-    base_url_deepseek = ''
-
-
-    model_api = Deepseek([api_key_deepseek], base_url_deepseek)
-
-
-#######################################################################################################################################
-
-
-
-    find_cite_result_directory = "../target_paper_data.json"  #target_paper_data path
-
+    # 加载数据集
+    find_cite_result_directory = str(settings.paths.target_paper_data_path)
 
     with codecs.open(find_cite_result_directory, "r") as f:
         datasets = json.load(f)
         f.close()
 
-    # example, you can change them depend on your need
-    NUM_REFLECTIONS = 3
-    num_ideas = 2
+    # 生成参数
+    NUM_REFLECTIONS = settings.model.num_reflections
+    num_ideas = settings.model.num_ideas
 
+    # 输出路径
+    ai_scientist_output = settings.paths.ai_scientist_output_path
+    first_ideas_save_path = str(ai_scientist_output / "first_ideas.json")
+    second_ideas_save_path = str(ai_scientist_output / "second_ideas.json")
+    final_ideas_save_path = str(ai_scientist_output / "final_ideas.json")
 
-
-    first_ideas_save_path = '../model_output/AI-Scientist/first_ideas.json'  # model_output path
-    second_ideas_save_path = '../model_output/AI-Scientist/second_ideas.json' # model_output path
-    final_ideas_save_path = '../model_output/AI-Scientist/final_ideas.json' # model_output path
-
-
-    cited_paper_conten_save_path = '../dataset_temple/cited_paper_conten.json' #dataset_temple path
+    cited_paper_conten_save_path = str(settings.paths.cited_paper_content_path)
 
     ensure_folder_exists(first_ideas_save_path)
     ensure_folder_exists(second_ideas_save_path)

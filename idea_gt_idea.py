@@ -4,10 +4,14 @@ import json
 
 
 
-from prompt_template.compare_gt import similarity_experiment_plan_w_experiment_plan, similarity_motivation_w_motivation
+from prompt_template.compare_gt import (
+    similarity_experiment_plan_w_experiment_plan,
+    similarity_motivation_w_motivation,
+)
 
 
 from LLM.Deepseek_v5 import Deepseek
+from config import settings
 
 
 def get_content_between_a_b(start_tag, end_tag, text):
@@ -31,7 +35,8 @@ def extract_json(text):
     else:
         return text
 
-def extract(text, type1, type2, hard = True):
+
+def extract(text, type1, type2, hard=True):
     if text:
         target_str = get_content_between_a_b(f"{type1}", f"{type2}", text)
         if target_str:
@@ -51,12 +56,12 @@ def save_json(data, file_path):
 
 if __name__ == "__main__":
 
-    api_key_deepseek = ''
-    base_url_deepseek = ''
+    model_api = Deepseek(
+        [settings.api.deepseek_api_key],
+        settings.api.deepseek_base_url,
+    )
 
-    model_api = Deepseek([api_key_deepseek], base_url_deepseek)
-
-    topic_path = './target_paper_data.json'
+    topic_path = str(settings.paths.target_paper_data_path)
     with codecs.open(topic_path, "r") as f:
         topics_ = json.load(f)
         f.close()  
@@ -78,16 +83,15 @@ if __name__ == "__main__":
         experiments[topic_['index']] = experiment_plan
 
 
-#########################################################################################################################################        
-
-
-    AI_Scientist_path = "./model_output/AI-Scientist/final_ideas.json"
+    # AI-Scientist 评估
+    ai_scientist_path = settings.paths.ai_scientist_output_path
+    AI_Scientist_path = str(ai_scientist_path / "final_ideas.json")
     with codecs.open(AI_Scientist_path, "r") as f:
         AI_Scientist_ = json.load(f)
         f.close()
 
     AI_Scientist = []
-    AI_Scientist_final_path = "./model_output/AI-Scientist/IGI.json"
+    AI_Scientist_final_path = str(ai_scientist_path / "IGI.json")
     for results in AI_Scientist_:
         fianl_result = []
 

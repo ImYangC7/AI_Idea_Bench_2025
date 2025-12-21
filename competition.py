@@ -8,6 +8,7 @@ import os
 from LLM.Deepseek_v5 import Deepseek
 
 from prompt_template.compare_open import get_judge_ideas_all_prompt
+from config import settings
 
 
 
@@ -184,7 +185,7 @@ def append_to_json_file(file_path, new_data, index):
 
 if __name__ == "__main__":
 
-    Topic_path =  "../target_paper_data.json"
+    Topic_path = str(settings.paths.target_paper_data_path)
     with codecs.open(Topic_path, "r") as f:
         Topics_ = json.load(f)
         f.close()
@@ -192,16 +193,14 @@ if __name__ == "__main__":
     Topics = {}
     for result in Topics_:
         if result["summary"]["revised_topic"]:
-            Topics[result['index']]  = result["summary"]["revised_topic"]
+            Topics[result['index']] = result["summary"]["revised_topic"]
         else:
-            Topics[result['index']]  = result["summary"]["topic"]
-
-
-    
+            Topics[result['index']] = result["summary"]["topic"]
 
     result_path = './swiss_result.json'
 
-    AI_Researcher_path = "./model_output/AI-Researcher/final_ideas.json"
+    # Load AI-Researcher results
+    AI_Researcher_path = str(settings.paths.ai_researcher_output_path / "final_ideas.json")
     with codecs.open(AI_Researcher_path, "r") as f:
         AI_Researcher_ = json.load(f)
         f.close()
@@ -210,7 +209,8 @@ if __name__ == "__main__":
     for result in AI_Researcher_:
         AI_Researcher[result['index']] = result['model_result']
 
-    AI_Scientist_path = "./model_output/AI-Scientist/final_ideas.json"
+    # Load AI-Scientist results
+    AI_Scientist_path = str(settings.paths.ai_scientist_output_path / "final_ideas.json")
     with codecs.open(AI_Scientist_path, "r") as f:
         AI_Scientist_ = json.load(f)
         f.close()
@@ -219,20 +219,18 @@ if __name__ == "__main__":
     for result in AI_Scientist_:
         AI_Scientist[result['index']] = result['model_result']
 
-
-    SciPIP_path = "./model_output/SciPIP/final_ideas.json"
+    # Load SciPIP results
+    SciPIP_path = str(settings.paths.scipip_output_path / "final_ideas.json")
     with codecs.open(SciPIP_path, "r") as f:
         SciPIP_ = json.load(f)
         f.close()
-
 
     SciPIP = {}
     for result in SciPIP_:
         SciPIP[result['index']] = result['model_result']
 
-
-
-    Social_Science_path = "./model_output/Social_Science/final_ideas.json"
+    # Load Social Science results
+    Social_Science_path = str(settings.paths.social_science_output_path / "final_ideas.json")
     with codecs.open(Social_Science_path, "r") as f:
         Social_Science_ = json.load(f)
         f.close()
@@ -283,13 +281,10 @@ if __name__ == "__main__":
         players.append(Player('Social_Science', Social_Science_idea))
 
 
-        #########################################################################################################################################
-
-        api_key_deepseek = ''
-
-        base_url_deepseek = ''
-
-        model_api = Deepseek([api_key_deepseek], base_url_deepseek)
+        model_api = Deepseek(
+            [settings.api.deepseek_api_key],
+            settings.api.deepseek_base_url,
+        )
 
         if data_check(result_path, index):
             pass

@@ -8,6 +8,8 @@ import random
 import codecs
 import json
 
+from config import settings
+
 def get_content_between_a_b(start_tag, end_tag, text):
     extracted_text = ""
     start_index = text.find(start_tag)
@@ -92,8 +94,8 @@ class SementicSearcher:
         await asyncio.sleep(0.5)
         try:
             filtered_query_params = {key: value for key, value in query_params.items() if value is not None}
-            # Load the API key from the configuration file
-            api_key = os.environ.get("SEMENTIC_SEARCH_API_KEY", None)
+            # Load the API key from config
+            api_key = settings.api.semantic_scholar_api_key or os.environ.get("SEMENTIC_SEARCH_API_KEY", None)
             headers = {'x-api-key': api_key} if api_key else None
             response = requests.get(url, params=filtered_query_params, headers=headers)
 

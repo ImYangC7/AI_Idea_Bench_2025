@@ -1,15 +1,14 @@
-
 import json
 import codecs
 import time
 import requests
-import time
 from typing import List, Dict, Union
-import time
 from tqdm import tqdm
 from statistics import mean
 
-S2_API_KEY = ''
+from config import settings
+
+S2_API_KEY = settings.api.semantic_scholar_api_key
 
 
 
@@ -97,13 +96,14 @@ if __name__ == "__main__":
 #########################################################################################################################################        
 
 
-    AI_Scientist_path = "./model_output/AI-Scientist/final_ideas_splited.json"
+    ai_scientist_path = settings.paths.ai_scientist_output_path
+    AI_Scientist_path = str(ai_scientist_path / "final_ideas_splited.json")
     with codecs.open(AI_Scientist_path, "r") as f:
         AI_Scientist_ = json.load(f)
         f.close()
 
     AI_Scientist = []
-    AI_Scientist_final_path = "./model_output/AI-Scientist/final_ideas_splited_feasibility.json"
+    AI_Scientist_final_path = str(ai_scientist_path / "final_ideas_splited_feasibility.json")
     for results in tqdm(AI_Scientist_, desc="Processing model results"):
         fianl_result = []
 

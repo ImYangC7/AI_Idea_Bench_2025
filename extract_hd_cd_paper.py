@@ -1,4 +1,3 @@
-
 import argparse
 import json
 from LLM.Deepseek_v3 import Deepseek
@@ -18,18 +17,17 @@ from fuzzywuzzy import fuzz
 import time
 
 import requests
-import time
 from typing import List, Dict, Union
 import aiohttp
 
 
 import urllib
-import random
 from urllib.error import URLError, HTTPError
 
 import fitz  # PyMuPDF
 
 from extract_one_paper_conten import get_one_paper_conten
+from config import settings
 
 
 
@@ -93,23 +91,18 @@ class Result:
 
 if __name__ == "__main__":
 
-    api_key_deepseek = ''
-    base_url_kimi = ''
-    base_url_deepseek = ''
+    model_api = Deepseek(
+        [settings.api.deepseek_api_key],
+        settings.api.deepseek_base_url,
+    )
 
-
-    model_api = Deepseek([api_key_deepseek], base_url_deepseek)
-
-
-
-
-    find_cite_result_directory = "./dataset_temple/target_paper_data_w_hd_cd.json"
+    find_cite_result_directory = str(settings.paths.target_paper_data_w_hd_cd_path)
 
     with codecs.open(find_cite_result_directory, "r") as f:
         paper_paths = json.load(f)
         f.close()
 
-    cited_paper_conten_path = "./dataset_temple/hd_cd_paper_conten.json"
+    cited_paper_conten_path = str(settings.paths.hd_cd_paper_content_path)
 
 
 

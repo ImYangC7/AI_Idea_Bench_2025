@@ -6,8 +6,7 @@ from prompt_template.compare_gt import compare_motivation, compare_plan
 
 
 from LLM.Deepseek_v5 import Deepseek
-
-
+from config import settings
 
 
 def save_json(data, file_path):
@@ -17,20 +16,14 @@ def save_json(data, file_path):
 
 if __name__ == "__main__":
 
+    model_api = Deepseek(
+        [settings.api.deepseek_api_key],
+        settings.api.deepseek_base_url,
+        model_name_deepseek=settings.api.deepseek_model_name,
+    )
 
-
-    api_key_deepseek = ""
-
-    base_url_deepseek = "https://api.deepseek.com/v1" 
-
-    model_name_deepseek = 'deepseek-chat'
-
-    model_api = Deepseek([api_key_deepseek], base_url_deepseek, model_name_deepseek=model_name_deepseek)
-
-
-
-    motivation_mcq_path = './dataset_temple/mcq_motivation.json'
-    experiment_mcq_path = './dataset_temple/mcq_experiment_plan.json'
+    motivation_mcq_path = str(settings.paths.mcq_motivation_path)
+    experiment_mcq_path = str(settings.paths.mcq_experiment_plan_path)
     with codecs.open(motivation_mcq_path, "r") as f:
         mot_mcqs_ = json.load(f)
         f.close()
@@ -56,16 +49,15 @@ if __name__ == "__main__":
 
 
 
-#########################################################################################################################################        
-
-
-    AI_Scientist_path = "./model_output/AI-Scientist/final_ideas.json"
+    # AI-Scientist 评估
+    ai_scientist_path = settings.paths.ai_scientist_output_path
+    AI_Scientist_path = str(ai_scientist_path / "final_ideas.json")
     with codecs.open(AI_Scientist_path, "r") as f:
         AI_Scientist_ = json.load(f)
         f.close()
 
     AI_Scientist = []
-    AI_Scientist_final_path = "./model_output/AI-Scientist/MCQ.json"
+    AI_Scientist_final_path = str(ai_scientist_path / "MCQ.json")
     for results in AI_Scientist_:
         fianl_result = []
         current_mot_mcq = mot_mcqs[results['index']]

@@ -5,7 +5,6 @@ import sys
 sys.path.append('./')
 import time
 import requests
-import time
 from typing import List, Dict, Union
 from threading import Thread
 import random
@@ -13,7 +12,9 @@ import arxiv
 from fuzzywuzzy import fuzz
 from random import choice
 
-S2_API_KEY = ''
+from config import settings
+
+S2_API_KEY = settings.api.semantic_scholar_api_key
 
 def search_for_papers(query, result_limit=10, publicationDateOrYear=None) -> Union[None, List[Dict]]:
     if not query:
@@ -163,16 +164,16 @@ def load_json(file_path):
         return json.load(file)
 
 if __name__ == "__main__":
-    summary_data_path = "../target_paper_data.json"
+    summary_data_path = str(settings.paths.target_paper_data_path)
     if os.path.exists(summary_data_path):
 
         with codecs.open(summary_data_path, 'r', encoding='utf-8') as file:
             summary_datas = json.load(file)
             file.close()
 
-    reuslt_w_hd_cd = "./dataset_temple/target_paper_data_w_hd_cd.json"
+    reuslt_w_hd_cd = str(settings.paths.target_paper_data_w_hd_cd_path)
 
-    cited_paper_store_path = './dataset_temple/paper_temple'
+    cited_paper_store_path = str(settings.paths.paper_temple_path)
 
     cited_paper_store_paths = os.listdir(cited_paper_store_path)
 

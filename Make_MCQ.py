@@ -6,6 +6,8 @@ from sentence_transformers import SentenceTransformer
 import numpy as np
 import random
 
+from config import settings
+
 
 
 def data_check(file_path, new_idex):
@@ -48,7 +50,7 @@ def append_to_json_file(file_path, new_data, index):
 
 if __name__ == "__main__":
 
-    cited_paper_conten_path = "./dataset_temple/cited_paper_conten.json"
+    cited_paper_conten_path = str(settings.paths.cited_paper_content_path)
     if os.path.exists(cited_paper_conten_path):
         with codecs.open(cited_paper_conten_path, 'r', encoding='utf-8') as file:
             cited_papers_data_raw = json.load(file)
@@ -71,7 +73,7 @@ if __name__ == "__main__":
 
 
 
-    find_cite_result_directory = "./target_paper_data.json"
+    find_cite_result_directory = str(settings.paths.target_paper_data_path)
 
     with codecs.open(find_cite_result_directory, "r") as f:
         cited_paper_paths_ = json.load(f)
@@ -95,7 +97,7 @@ if __name__ == "__main__":
         cited_paper_paths[cite_paper_path['index']] = paper_paths
 
 
-    summary_data_path = "./target_paper_data.json"
+    summary_data_path = str(settings.paths.target_paper_data_path)
     if os.path.exists(summary_data_path):
         with codecs.open(summary_data_path, 'r', encoding='utf-8') as file:
             summary_datas = json.load(file)
@@ -125,7 +127,7 @@ if __name__ == "__main__":
     
     model = SentenceTransformer('all-MiniLM-L6-v2')
 
-    mcq_motivation_path = "./dataset_temple/mcq_motivation.json"
+    mcq_motivation_path = str(settings.paths.mcq_motivation_path)
     for i in range(len(motivation_gt_all)):
         
         curren_index = index_all[i]
@@ -202,7 +204,7 @@ if __name__ == "__main__":
             append_to_json_file(mcq_motivation_path, mcq, curren_index)
 
     
-    mcq_experiment_plan_path = "./dataset_temple/mcq_experiment_plan.json"
+    mcq_experiment_plan_path = str(settings.paths.mcq_experiment_plan_path)
     for i in range(len(experiment_plan_gt_all)):
         curren_index = index_all[i]
         cited_paper_paths_ = cited_paper_paths[curren_index]

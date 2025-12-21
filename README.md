@@ -16,31 +16,49 @@ We construct the AI Idea Bench 2025 dataset, comprising 3,495 influential target
 We propose an evaluation framework that aligns generated research ideas with the content of ground-truth papers, while simultaneously assessing their merits and drawbacks based on other reference material.
 
 
-## 🚀 Pipline
+## 🚀 Pipeline
 
-### Create the enviroment
+### Create the environment
 
 ```bash
-pip install requirements.txt
+pip install -r requirements.txt
 ```
+
+### Configuration
+
+All API keys and paths are now managed through a centralized configuration system using `.env` file.
+
+1. **Copy the example configuration file:**
+```bash
+cp .env.example .env
+```
+
+2. **Edit `.env` and fill in your API keys and paths:**
+```bash
+# API Keys
+GPT4O_API_KEY=your_gpt4o_api_key_here
+GPT4O_BASE_URL=https://api.openai.com/v1
+DEEPSEEK_API_KEY=your_deepseek_api_key_here
+DEEPSEEK_BASE_URL=https://api.deepseek.com/v1
+S2_API_KEY=your_semantic_scholar_api_key_here
+
+# Data Paths (relative to project root)
+PAPERS_DATA_PATH=../papers_data
+TARGET_PAPER_DATA_PATH=../target_paper_data.json
+```
+
+See `.env.example` for all available configuration options.
 
 ### Data preparation
 
-Download the data from <a href="https://huggingface.co/datasets/yanshengqiu/AI_Idea_Bench_2025">[Huggingface]</a> and then get the path to the data,
+Download the data from <a href="https://huggingface.co/datasets/yanshengqiu/AI_Idea_Bench_2025">[Huggingface]</a> and configure the paths in your `.env` file.
 
-```bash
-your_papers_data_path = '/papers_data/'
-target_paper_data = '/target_paper_data.json'
-```
-and change the './papers_data/' in target_paper_data.json by your_papers_data_path
-
-My project code framework for reference
+Recommended project structure:
 ```
 Idea_bench_data/
 ├── code (current repository)
-├── papers_data   
+├── papers_data
 ├── target_paper_data.json
-
 ```
 
 ### Preparation for SciPDF Parser:
@@ -56,7 +74,11 @@ Install java for grobid
 ```bash
 wget  https://download.oracle.com/java/GA/jdk11/9/GPL/openjdk-11.0.2_linux-x64_bin.tar.gz
 tar -zxvf openjdk-11.0.2_linux-x64_bin.tar.gz
-export JAVA_HOME=Your_path/jdk-11.0.2
+```
+
+Configure JAVA_HOME in your `.env` file:
+```bash
+JAVA_HOME=/path/to/jdk-11.0.2
 ```
 
 ### Run grobid
@@ -77,52 +99,26 @@ cd grobid
 
 ### Generate ideas
 
-Set your dataset_temple path in extract_one_paper_conten.py lines 10
-
-
-
 ```bash
 cd ./AI-Scientist
-```
-
-Set your code paths, semantic scholar API, GPT-4o API, deepseek API, output file paths in generate_ideas_fron_papers.py lines 16, 472-476, 482-484, 494, and 507-512.
-
-
-```bash
 python generate_ideas_fron_papers.py
-
 cd ..
 ```
 
-
 ### Idea multiple-choice evaluation
-Set cited_paper_conten path, target_paper_data path,output file paths in Make_MCQ.py lines 51,74,98,128 and 205
-
-
-
 
 ```bash
-python Make_MCQ.py # Make mcq questions
-```
-
-Set your deepseek api in MCQ.py lines 22-26
-
-```bash
+python Make_MCQ.py  # Make mcq questions
 python MCQ.py
 ```
 
-
 ### Idea to idea matching
-
-Set your deepseek api in idea_gt_idea.py lines 54-57
 
 ```bash
 python idea_gt_idea.py
 ```
 
-### Idea to idea matching
-
-Set your deepseek api in idea_gt_topic.py lines 54-57
+### Idea to topic matching
 
 ```bash
 python idea_gt_topic.py
@@ -130,29 +126,17 @@ python idea_gt_topic.py
 
 ### Ideas competition among baselines
 
-Set your deepseek api in competition.py lines 288-292
-
 ```bash
 python competition.py
 ```
 
-
 ### Novelty assessment
 
-Set semantic scholar API in find_paper_by_kewords.py lines 16
-
 ```bash
-python find_paper_by_kewords.py  # Find curren papers and history papers
-```
-
-Set your deepseek api in extract_hd_cd_paper.py lines 96-98
-```bash
+python find_paper_by_kewords.py  # Find current papers and history papers
 python extract_hd_cd_paper.py
 ```
 **Attention !!** Here there may be a failure to parse the paper, this is because some papers cannot be downloaded through the script. For this issue, we will manually re-download those papers that cannot be parsed.
-
-
-Set your deepseek api in Novelty.py lines 288-292
 
 ```bash
 python Novelty.py
@@ -160,20 +144,9 @@ python Novelty.py
 
 ### Feasibility
 
-Set your deepseek api in split_experimental_plan.py lines 62-64
-
 ```bash
 python split_experimental_plan.py  # split experimental plan of generated ideas
-```
-
-
-
-### Novelty assessment
-
-Set semantic scholar API in feasibility.py lines 12
-
-```bash
-python feasibility.py 
+python feasibility.py
 ```
 
 ## 🚩 License
