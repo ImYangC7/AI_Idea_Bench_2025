@@ -69,18 +69,25 @@ if __name__ == "__main__":
 
     motivations = {}
     for topic_ in topics_:
-        motivations[topic_['index']] = topic_['model_result']['motivation']
+        summary = topic_.get("summary", {})
+        motivations[topic_["index"]] = summary.get("motivation", "")
 
 
     experiments = {}
     for topic_ in topics_:
-        experiments_ = topic_['model_result']['method']['targeted_designs_details']
-        experiment_plan = ''
+        summary = topic_.get("summary", {})
+        experiments_ = summary.get("method", {}).get("targeted_designs_details", [])
+        experiment_plan = ""
         for ex in experiments_:
+            experiment_plan = (
+                experiment_plan
+                + ex.get("design_name", "")
+                + ": "
+                + ex.get("description", "")
+                + "\n"
+            )
 
-            experiment_plan = experiment_plan + ex['design_name'] + ': ' + ex['description'] + '\n'
-
-        experiments[topic_['index']] = experiment_plan
+        experiments[topic_["index"]] = experiment_plan
 
 
     # AI-Scientist 评估

@@ -12,6 +12,7 @@
 
 ### Benchmark
 We construct the AI Idea Bench 2025 dataset, comprising 3,495 influential target papers in AI-related conferences along with their corresponding motivating papers, to systematically evaluate the effectiveness of idea generation methods.
+
 ### Evaluation Framework
 We propose an evaluation framework that aligns generated research ideas with the content of ground-truth papers, while simultaneously assessing their merits and drawbacks based on other reference material.
 
@@ -26,20 +27,28 @@ pip install -r requirements.txt
 
 ### Configuration
 
-All API keys and paths are now managed through a centralized configuration system using `.env` file.
+All API keys and paths are managed through a centralized configuration system using Pydantic Settings with `.env` file.
 
-1. **Copy the example configuration file:**
+> **Note:** This project uses **OpenAI-compatible API format**, supporting any provider: OpenAI, DeepSeek, Azure OpenAI, local LLMs (vLLM, Ollama, etc.)
+
+**1. Copy the example configuration file:**
 ```bash
 cp .env.example .env
 ```
 
-2. **Edit `.env` and fill in your API keys and paths:**
+**2. Edit `.env` and fill in your API keys:**
 ```bash
-# API Keys
-GPT4O_API_KEY=your_gpt4o_api_key_here
-GPT4O_BASE_URL=https://api.openai.com/v1
-DEEPSEEK_API_KEY=your_deepseek_api_key_here
-DEEPSEEK_BASE_URL=https://api.deepseek.com/v1
+# Primary LLM - Used for idea generation (AI-Scientist)
+IDEA_GEN_API_KEY=your_api_key_here
+IDEA_GEN_BASE_URL=https://api.openai.com/v1
+IDEA_GEN_MODEL_NAME=gpt-4o
+
+# Evaluation LLM - Used for MCQ, competition, idea matching, novelty
+EVAL_API_KEY=your_api_key_here
+EVAL_BASE_URL=https://api.deepseek.com/v1
+EVAL_MODEL_NAME=deepseek-chat
+
+# Semantic Scholar API (for paper search)
 S2_API_KEY=your_semantic_scholar_api_key_here
 
 # Data Paths (relative to project root)
@@ -47,7 +56,7 @@ PAPERS_DATA_PATH=../papers_data
 TARGET_PAPER_DATA_PATH=../target_paper_data.json
 ```
 
-See `.env.example` for all available configuration options.
+See `.env.example` for all available configuration options including model parameters and intermediate data paths.
 
 ### Data preparation
 
@@ -69,10 +78,23 @@ pip install git+https://github.com/titipata/scipdf_parser
 python -m spacy download en_core_web_sm
 ```
 
-### Preparation for grobid:
-Install java for grobid
+### Preparation for Grobid
+
+**Option 1: Docker (Recommended)**
 ```bash
-wget  https://download.oracle.com/java/GA/jdk11/9/GPL/openjdk-11.0.2_linux-x64_bin.tar.gz
+docker run --rm --init --ulimit core=0 -p 8070:8070 grobid/grobid:0.7.3
+```
+
+Wait until you see `Started @XXXXXms` in the logs, then test:
+```bash
+curl http://localhost:8070/api/isalive  # Should return "true"
+```
+
+**Option 2: Local Installation**
+
+Install Java for Grobid:
+```bash
+wget https://download.oracle.com/java/GA/jdk11/9/GPL/openjdk-11.0.2_linux-x64_bin.tar.gz
 tar -zxvf openjdk-11.0.2_linux-x64_bin.tar.gz
 ```
 
@@ -81,21 +103,24 @@ Configure JAVA_HOME in your `.env` file:
 JAVA_HOME=/path/to/jdk-11.0.2
 ```
 
-### Run grobid
-
-If you can successfully start grobid in [SciPDF Parser](https://github.com/titipata/scipdf_parser.git), run the following commands:
+Run Grobid via SciPDF Parser:
 ```bash
 cd scipdf_parser
 bash serve_grobid.sh
 ```
 
-(Optional) Or, you can refer to the following process to install grobid if the previous commands fail:
+Or install Grobid directly:
 ```bash
 git clone https://github.com/kermitt2/grobid.git
 cd grobid
 ./gradlew clean install
 ./gradlew run
 ```
+
+> **Note:** If using a system proxy, add `localhost` to `no_proxy` to avoid connection issues:
+> ```bash
+> export no_proxy="localhost,127.0.0.1"
+> ```
 
 ### Generate ideas
 
