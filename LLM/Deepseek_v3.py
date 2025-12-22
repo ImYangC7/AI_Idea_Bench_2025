@@ -3,6 +3,7 @@ from random import choice
 from typing import List
 from openai import OpenAI
 import json
+import re
 
 
 
@@ -37,11 +38,11 @@ class  Deepseek:
                     model=self.model_name_deepseek,
                     messages=messages,
                     temperature=self.temperature_deepseek,
-                    response_format={"type": "json_object"},
                     stream=False,
                     max_tokens=8000
                 )
-                output = self.postprocess(output)
+                # 直接返回原始字符串，不做 JSON 解析
+                output = output.choices[0].message.content
 
 
 

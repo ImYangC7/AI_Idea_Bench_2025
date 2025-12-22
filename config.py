@@ -9,49 +9,53 @@ from functools import lru_cache
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# .env 文件路径（基于 config.py 所在目录）
+_ENV_FILE = Path(__file__).parent / ".env"
+
 
 class APISettings(BaseSettings):
-    """API 相关配置"""
+    """API 相关配置 (OpenAI-compatible format)"""
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=_ENV_FILE,
         env_file_encoding="utf-8",
         extra="ignore",
     )
 
-    # GPT-4o API
-    gpt4o_api_key: str = Field(default="", alias="GPT4O_API_KEY")
-    gpt4o_base_url: str = Field(
-        default="https://api.openai.com/v1", alias="GPT4O_BASE_URL"
+    # Primary LLM - Used for idea generation (AI-Scientist)
+    idea_gen_api_key: str = Field(default="", alias="IDEA_GEN_API_KEY")
+    idea_gen_base_url: str = Field(
+        default="https://api.openai.com/v1", alias="IDEA_GEN_BASE_URL"
     )
+    idea_gen_model_name: str = Field(default="gpt-4o", alias="IDEA_GEN_MODEL_NAME")
 
-    # DeepSeek API
-    deepseek_api_key: str = Field(default="", alias="DEEPSEEK_API_KEY")
-    deepseek_base_url: str = Field(
-        default="https://api.deepseek.com/v1", alias="DEEPSEEK_BASE_URL"
+    # Evaluation LLM - Used for MCQ, competition, idea matching, novelty assessment
+    eval_api_key: str = Field(default="", alias="EVAL_API_KEY")
+    eval_base_url: str = Field(
+        default="https://api.deepseek.com/v1", alias="EVAL_BASE_URL"
     )
-    deepseek_model_name: str = Field(
-        default="deepseek-chat", alias="DEEPSEEK_MODEL_NAME"
-    )
+    eval_model_name: str = Field(default="deepseek-chat", alias="EVAL_MODEL_NAME")
 
     # Semantic Scholar API
     semantic_scholar_api_key: str = Field(default="", alias="S2_API_KEY")
 
-    # OpenRouter API (for Llama)
-    openrouter_api_key: str = Field(default="", alias="OPENROUTER_API_KEY")
+
+def _get_project_root() -> Path:
+    """获取项目根目录（config.py 所在目录）"""
+    return Path(__file__).parent.resolve()
 
 
 class PathSettings(BaseSettings):
     """路径相关配置"""
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=_ENV_FILE,
         env_file_encoding="utf-8",
         extra="ignore",
     )
 
-    # 项目根目录（自动检测）
-    project_root: Path = Field(default_factory=lambda: Path(__file__).parent)
+    # 项目根目录（自动检测，基于 config.py 位置）
+    project_root: Path = Field(default_factory=_get_project_root)
 
-    # 数据集路径
+    # 数据集路径（相对于项目根目录的上级）
     papers_data_path: Path = Field(
         default=Path("../papers_data"), alias="PAPERS_DATA_PATH"
     )
@@ -59,61 +63,72 @@ class PathSettings(BaseSettings):
         default=Path("../target_paper_data.json"), alias="TARGET_PAPER_DATA_PATH"
     )
 
-    # 中间数据路径
+    # 中间数据路径（相对于项目根目录）
     dataset_temple_path: Path = Field(
-        default=Path("./dataset_temple"), alias="DATASET_TEMPLE_PATH"
+        default=Path("dataset_temple"), alias="DATASET_TEMPLE_PATH"
     )
     cited_paper_content_path: Path = Field(
-        default=Path("./dataset_temple/cited_paper_conten.json"),
+        default=Path("dataset_temple/cited_paper_conten.json"),
         alias="CITED_PAPER_CONTENT_PATH",
     )
     mcq_motivation_path: Path = Field(
-        default=Path("./dataset_temple/mcq_motivation.json"),
+        default=Path("dataset_temple/mcq_motivation.json"),
         alias="MCQ_MOTIVATION_PATH",
     )
     mcq_experiment_plan_path: Path = Field(
-        default=Path("./dataset_temple/mcq_experiment_plan.json"),
+        default=Path("dataset_temple/mcq_experiment_plan.json"),
         alias="MCQ_EXPERIMENT_PLAN_PATH",
     )
     target_paper_data_w_hd_cd_path: Path = Field(
-        default=Path("./dataset_temple/target_paper_data_w_hd_cd.json"),
+        default=Path("dataset_temple/target_paper_data_w_hd_cd.json"),
         alias="TARGET_PAPER_DATA_W_HD_CD_PATH",
     )
     hd_cd_paper_content_path: Path = Field(
-        default=Path("./dataset_temple/hd_cd_paper_conten.json"),
+        default=Path("dataset_temple/hd_cd_paper_conten.json"),
         alias="HD_CD_PAPER_CONTENT_PATH",
     )
     paper_temple_path: Path = Field(
-        default=Path("./dataset_temple/paper_temple"),
+        default=Path("dataset_temple/paper_temple"),
         alias="PAPER_TEMPLE_PATH",
     )
 
-    # 模型输出路径
+    # 模型输出路径（相对于项目根目录）
     model_output_base_path: Path = Field(
-        default=Path("./model_output"), alias="MODEL_OUTPUT_BASE_PATH"
+        default=Path("model_output"), alias="MODEL_OUTPUT_BASE_PATH"
     )
+
+    def _resolve(self, path: Path) -> Path:
+        """将相对路径解析为绝对路径（基于项目根目录）"""
+        if path.is_absolute():
+            return path
+        return (self.project_root / path).resolve()
 
     @property
     def ai_scientist_output_path(self) -> Path:
-        return self.model_output_base_path / "AI-Scientist"
+        return self._resolve(self.model_output_base_path) / "AI-Scientist"
 
     @property
     def ai_researcher_output_path(self) -> Path:
-        return self.model_output_base_path / "AI-Researcher"
+        return self._resolve(self.model_output_base_path) / "AI-Researcher"
 
     @property
     def scipip_output_path(self) -> Path:
-        return self.model_output_base_path / "SciPIP"
+        return self._resolve(self.model_output_base_path) / "SciPIP"
 
     @property
     def social_science_output_path(self) -> Path:
-        return self.model_output_base_path / "Social_Science"
+        return self._resolve(self.model_output_base_path) / "Social_Science"
+
+    def resolve_path(self, attr_name: str) -> Path:
+        """获取解析后的绝对路径"""
+        path = getattr(self, attr_name)
+        return self._resolve(path)
 
 
 class ModelSettings(BaseSettings):
     """模型相关配置"""
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=_ENV_FILE,
         env_file_encoding="utf-8",
         extra="ignore",
     )
@@ -128,7 +143,7 @@ class ModelSettings(BaseSettings):
 class GrobidSettings(BaseSettings):
     """Grobid PDF 解析相关配置"""
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=_ENV_FILE,
         env_file_encoding="utf-8",
         extra="ignore",
     )
@@ -140,7 +155,7 @@ class GrobidSettings(BaseSettings):
 class Settings(BaseSettings):
     """总配置类，组合所有子配置"""
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=_ENV_FILE,
         env_file_encoding="utf-8",
         extra="ignore",
     )

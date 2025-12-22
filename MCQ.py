@@ -17,9 +17,9 @@ def save_json(data, file_path):
 if __name__ == "__main__":
 
     model_api = Deepseek(
-        [settings.api.deepseek_api_key],
-        settings.api.deepseek_base_url,
-        model_name_deepseek=settings.api.deepseek_model_name,
+        [settings.api.eval_api_key],
+        settings.api.eval_base_url,
+        model_name_deepseek=settings.api.eval_model_name,
     )
 
     motivation_mcq_path = str(settings.paths.mcq_motivation_path)

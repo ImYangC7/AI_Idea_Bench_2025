@@ -40,3 +40,10 @@ Thumbs.db
 # Grobid
 grobid/
 
+
+papers_data/
+target_paper_data.json
+model_output
+
+dataset_temple/
+AI-Scientist/dataset_temple/

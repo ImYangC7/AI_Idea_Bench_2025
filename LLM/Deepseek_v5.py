@@ -45,10 +45,12 @@ class  Deepseek:
 
 
 
+                # 在 system prompt 中添加 JSON 关键词以满足 response_format 要求
+                system_content = prompt + "\n\nAlways respond with valid JSON format."
                 messages = [
                     {
                         "role": "system",
-                        "content": prompt
+                        "content": system_content
                     },
                     {"role": "user", "content": question},
                 ]

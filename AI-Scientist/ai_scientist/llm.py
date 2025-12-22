@@ -113,19 +113,23 @@ def get_batch_responses_from_llm(
             new_msg_history + [{"role": "assistant", "content": c}] for c in content
         ]
     else:
-        content, new_msg_history = [], []
-        for _ in range(n_responses):
-            c, hist = get_response_from_llm(
-                msg,
-                client,
-                model,
-                system_message,
-                print_debug=False,
-                msg_history=None,
-                temperature=temperature,
-            )
-            content.append(c)
-            new_msg_history.append(hist)
+        # 通用 OpenAI 兼容格式，支持任意模型名称
+        new_msg_history = msg_history + [{"role": "user", "content": msg}]
+        response = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": system_message},
+                *new_msg_history,
+            ],
+            temperature=temperature,
+            max_tokens=MAX_NUM_TOKENS,
+            n=n_responses,
+            stop=None,
+        )
+        content = [r.message.content for r in response.choices]
+        new_msg_history = [
+            new_msg_history + [{"role": "assistant", "content": c}] for c in content
+        ]
 
     if print_debug:
         # Just print the first one.
@@ -253,7 +257,21 @@ def get_response_from_llm(
         content = response.choices[0].message.content
         new_msg_history = new_msg_history + [{"role": "assistant", "content": content}]
     else:
-        raise ValueError(f"Model {model} not supported.")
+        # 通用 OpenAI 兼容格式，支持任意模型名称
+        new_msg_history = msg_history + [{"role": "user", "content": msg}]
+        response = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": system_message},
+                *new_msg_history,
+            ],
+            temperature=temperature,
+            max_tokens=MAX_NUM_TOKENS,
+            n=1,
+            stop=None,
+        )
+        content = response.choices[0].message.content
+        new_msg_history = new_msg_history + [{"role": "assistant", "content": content}]
 
     if print_debug:
         print()
@@ -296,48 +314,35 @@ def extract_json_between_markers(llm_output):
 
 
 def create_client(model):
+    """Create OpenAI-compatible client for given model.
+
+    Supports any OpenAI-compatible API by using settings from config.
+    Special handling for Anthropic models (claude-*).
+    """
+    # Anthropic models (require special client)
     if model.startswith("claude-"):
         print(f"Using Anthropic API with model {model}.")
         return anthropic.Anthropic(), model
-    elif model.startswith("bedrock") and "claude" in model:
+    if model.startswith("bedrock") and "claude" in model:
         client_model = model.split("/")[-1]
         print(f"Using Amazon Bedrock with model {client_model}.")
         return anthropic.AnthropicBedrock(), client_model
-    elif model.startswith("vertex_ai") and "claude" in model:
+    if model.startswith("vertex_ai") and "claude" in model:
         client_model = model.split("/")[-1]
         print(f"Using Vertex AI with model {client_model}.")
         return anthropic.AnthropicVertex(), client_model
-    elif model in ["o1-preview-2024-09-12", "o1-mini-2024-09-12"]:
+
+    # OpenAI o1 models (require official OpenAI client)
+    if model in ["o1-preview-2024-09-12", "o1-mini-2024-09-12"]:
         print(f"Using OpenAI API with model {model}.")
         return openai.OpenAI(), model
-    elif model == "deepseek-coder-v2-0724":
-        print(f"Using OpenAI API with {model}.")
-        api_key = settings.api.deepseek_api_key or os.environ.get("DEEPSEEK_API_KEY", "")
-        return openai.OpenAI(
-            api_key=api_key,
-            base_url="https://api.deepseek.com"
-        ), model
-    elif model == "deepseek":
-        print(f"Using OpenAI API with {model}.")
-        api_key = settings.api.deepseek_api_key or os.environ.get("DEEPSEEK_API_KEY", "")
-        return openai.OpenAI(
-            api_key=api_key,
-            base_url="https://api.deepseek.com"
-        ), model
-    elif model == "gpt-4o-2024-11-20":
-        print(f"Using OpenAI API with {model}.")
-        api_key = settings.api.gpt4o_api_key or os.environ.get("GPT4o_KEY", "")
-        base_url = settings.api.gpt4o_base_url or os.environ.get("GPT4o_url", "")
-        return openai.OpenAI(
-            api_key=api_key,
-            base_url=base_url
-        ), model
-    elif model == "llama3.1-405b":
-        print(f"Using OpenAI API with {model}.")
-        api_key = settings.api.openrouter_api_key or os.environ.get("OPENROUTER_API_KEY", "")
-        return openai.OpenAI(
-            api_key=api_key,
-            base_url="https://openrouter.ai/api/v1"
-        ), "meta-llama/llama-3.1-405b-instruct"
-    else:
-        raise ValueError(f"Model {model} not supported.")
+
+    # Default: Use idea_gen settings for any OpenAI-compatible model
+    # This supports: GPT-4o, DeepSeek, Qwen, Llama, local models, etc.
+    api_key = settings.api.idea_gen_api_key or os.environ.get("GPT4o_KEY", "")
+    base_url = settings.api.idea_gen_base_url or os.environ.get("GPT4o_url", "")
+
+    print(f"Using OpenAI-compatible API with model {model}.")
+    print(f"  Base URL: {base_url}")
+
+    return openai.OpenAI(api_key=api_key, base_url=base_url), model

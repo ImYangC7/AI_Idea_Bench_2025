@@ -308,6 +308,8 @@ Abstract: {paper['abstract']}
         try:
             article_dict = scipdf.parse_pdf_to_dict(pdf_path)
         except Exception as e:
+            print(f"Failed to parse PDF <{pdf_path}>: {e}")
+            print("Please ensure Grobid service is running: cd scipdf_parser && bash serve_grobid.sh")
             return None
         return article_dict
 

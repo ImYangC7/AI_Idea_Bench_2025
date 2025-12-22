@@ -58,8 +58,8 @@ def save_json(data, file_path):
 
 if __name__ == "__main__":
     model_api = Deepseek(
-        [settings.api.deepseek_api_key],
-        settings.api.deepseek_base_url,
+        [settings.api.eval_api_key],
+        settings.api.eval_base_url,
     )
 
     # AI-Scientist 评估

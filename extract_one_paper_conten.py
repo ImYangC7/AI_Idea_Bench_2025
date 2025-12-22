@@ -6,6 +6,17 @@ import fitz
 from config import settings
 
 
+def resolve_paper_path(paper_path: str) -> str:
+    """将论文相对路径解析为绝对路径（基于项目根目录）"""
+    if os.path.isabs(paper_path):
+        return paper_path
+    # 移除开头的 ./
+    if paper_path.startswith("./"):
+        paper_path = paper_path[2:]
+    # 基于项目根目录解析
+    return str(settings.paths.project_root / paper_path)
+
+
 def save_first_20_pages(input_pdf_path):
     current_dir = str(settings.paths.dataset_temple_path)
     output_folder = os.path.join(current_dir, 'cutpdf')
@@ -64,10 +75,14 @@ def get_one_paper_conten(model_api, pdf_path, topic):
 
     sementicsearcher = SementicSearcher()
 
+    # 解析为绝对路径
+    pdf_path = resolve_paper_path(pdf_path)
     pdf_path = save_first_20_pages(pdf_path)
 
     article_dict = sementicsearcher.read_arxiv_from_path(pdf_path)
-    title,abstract,pub_data = article_dict["title"],article_dict["abstract"],article_dict["pub_date"]
+    if article_dict is None:
+        raise RuntimeError(f"Failed to parse PDF: {pdf_path}. Is Grobid running?")
+    title, abstract, pub_data = article_dict["title"], article_dict["abstract"], article_dict["pub_date"]
     paper = Result(title,abstract,article_dict,0,pub_data)
     paper_conten = sementicsearcher.read_paper_content_with_ref(article_dict)
 

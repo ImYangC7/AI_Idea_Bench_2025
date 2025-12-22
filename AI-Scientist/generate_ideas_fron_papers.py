@@ -270,31 +270,61 @@ def on_backoff(details):
     )
 
 
+# Semantic Scholar API 速率限制：1 request/second
+_last_s2_request_time = 0.0
+_S2_MIN_INTERVAL = 1.5  # 保守设置，略大于 1 秒
+
+
+def _wait_for_rate_limit():
+    """确保两次请求间隔至少 _S2_MIN_INTERVAL 秒"""
+    global _last_s2_request_time
+    elapsed = time.time() - _last_s2_request_time
+    if elapsed < _S2_MIN_INTERVAL:
+        time.sleep(_S2_MIN_INTERVAL - elapsed)
+    _last_s2_request_time = time.time()
+
+
 @backoff.on_exception(
-    backoff.expo, requests.exceptions.HTTPError, on_backoff=on_backoff
+    backoff.expo,
+    (requests.exceptions.HTTPError, requests.exceptions.RequestException),
+    max_tries=5,
+    max_time=60,
+    on_backoff=on_backoff,
+    giveup=lambda e: isinstance(e, requests.exceptions.HTTPError) and e.response.status_code not in (429, 500, 502, 503, 504)
 )
 def search_for_papers(query, result_limit=10) -> Union[None, List[Dict]]:
     if not query:
         return None
+
+    _wait_for_rate_limit()
+
     rsp = requests.get(
         "https://api.semanticscholar.org/graph/v1/paper/search",
-        headers={"X-API-KEY": os.environ["S2_API_KEY"]},
+        headers={"X-API-KEY": os.environ.get("S2_API_KEY", "")},
         params={
             "query": query,
             "limit": result_limit,
             "fields": "title,authors,venue,year,abstract,citationStyles,citationCount",
             'publicationDateOrYear': '2010-01-01:2023-10-03',
         },
+        timeout=30,
     )
+
+    # 429 表示速率限制，抛出异常让 backoff 重试
+    if rsp.status_code == 429:
+        print(f"Rate limited (429), waiting before retry...")
+        time.sleep(5)  # 额外等待
+        rsp.raise_for_status()
+
     rsp.raise_for_status()
     results = rsp.json()
-    total = results["total"]
-    time.sleep(1.0)
+    total = results.get("total", 0)
+
     if not total:
         return None
 
-    papers = results["data"]
-    return papers
+    papers = results.get("data", [])
+    return papers if papers else None
 
 
 novelty_system_msg = """You are an ambitious AI PhD student who is looking to publish a paper that will contribute significantly to the field.
@@ -396,25 +426,26 @@ def check_idea_novelty(
                 assert json_output is not None, "Failed to extract JSON from LLM output"
 
                 ## SEARCH FOR PAPERS
-                query = json_output["Query"]
-                papers = search_for_papers(query, result_limit=10)
-                if papers is None:
-                    papers_str = "No papers found."
+                query = json_output.get("Query", "")
+                papers = search_for_papers(query, result_limit=10) if query else None
 
-                paper_strings = []
-                for i, paper in enumerate(papers):
-                    paper_strings.append(
-                        """{i}: {title}. {authors}. {venue}, {year}.\nNumber of citations: {cites}\nAbstract: {abstract}""".format(
-                            i=i,
-                            title=paper["title"],
-                            authors=paper["authors"],
-                            venue=paper["venue"],
-                            year=paper["year"],
-                            cites=paper["citationCount"],
-                            abstract=paper["abstract"],
+                if papers is None or len(papers) == 0:
+                    papers_str = "No papers found."
+                else:
+                    paper_strings = []
+                    for i, paper in enumerate(papers):
+                        paper_strings.append(
+                            """{i}: {title}. {authors}. {venue}, {year}.\nNumber of citations: {cites}\nAbstract: {abstract}""".format(
+                                i=i,
+                                title=paper.get("title", "Unknown"),
+                                authors=paper.get("authors", "Unknown"),
+                                venue=paper.get("venue", "Unknown"),
+                                year=paper.get("year", "Unknown"),
+                                cites=paper.get("citationCount", 0),
+                                abstract=paper.get("abstract", "No abstract"),
+                            )
                         )
-                    )
-                papers_str = "\n\n".join(paper_strings)
+                    papers_str = "\n\n".join(paper_strings)
 
             except Exception as e:
                 print(f"Error: {e}")
@@ -469,20 +500,23 @@ def ensure_folder_exists(json_file_path):
 
 if __name__ == "__main__":
 
-    # 从配置加载 API keys
-    os.environ["GPT4o_KEY"] = settings.api.gpt4o_api_key
-    os.environ["GPT4o_url"] = settings.api.gpt4o_base_url
+    # 从配置加载 API keys (用于 llm.py 中的 create_client)
+    os.environ["GPT4o_KEY"] = settings.api.idea_gen_api_key
+    os.environ["GPT4o_url"] = settings.api.idea_gen_base_url
     os.environ["S2_API_KEY"] = settings.api.semantic_scholar_api_key
 
-    client, client_model = create_client('gpt-4o-2024-11-20')
+    # 使用配置的模型名称创建客户端
+    client, client_model = create_client(settings.api.idea_gen_model_name)
 
     model_api = Deepseek(
-        [settings.api.deepseek_api_key],
-        settings.api.deepseek_base_url,
+        [settings.api.eval_api_key],
+        settings.api.eval_base_url,
+        model_name_deepseek=settings.api.eval_model_name,
+        temperature_deepseek=settings.model.temperature,
     )
 
-    # 加载数据集
-    find_cite_result_directory = str(settings.paths.target_paper_data_path)
+    # 加载数据集（解析为绝对路径）
+    find_cite_result_directory = str(settings.paths.resolve_path("target_paper_data_path"))
 
     with codecs.open(find_cite_result_directory, "r") as f:
         datasets = json.load(f)
@@ -492,37 +526,31 @@ if __name__ == "__main__":
     NUM_REFLECTIONS = settings.model.num_reflections
     num_ideas = settings.model.num_ideas
 
-    # 输出路径
+    # 输出路径（已解析为绝对路径）
     ai_scientist_output = settings.paths.ai_scientist_output_path
     first_ideas_save_path = str(ai_scientist_output / "first_ideas.json")
     second_ideas_save_path = str(ai_scientist_output / "second_ideas.json")
     final_ideas_save_path = str(ai_scientist_output / "final_ideas.json")
 
-    cited_paper_conten_save_path = str(settings.paths.cited_paper_content_path)
+    cited_paper_conten_save_path = str(settings.paths.resolve_path("cited_paper_content_path"))
 
     ensure_folder_exists(first_ideas_save_path)
     ensure_folder_exists(second_ideas_save_path)
     ensure_folder_exists(final_ideas_save_path)
     ensure_folder_exists(cited_paper_conten_save_path)
 
+    # 加载已有结果（支持断点续跑），首次运行时初始化为空
+    def load_or_init(path: str) -> list:
+        if os.path.exists(path):
+            with codecs.open(path, "r") as f:
+                return json.load(f)
+        return []
 
+    first_ideas_saves_ = load_or_init(first_ideas_save_path)
+    first_ideas_saves = {item['index']: item for item in first_ideas_saves_}
 
-    with codecs.open(first_ideas_save_path, "r") as f:
-        first_ideas_saves_ = json.load(f)
-        f.close()
-
-    first_ideas_saves = {}        
-    for first_ideas_save in first_ideas_saves_:
-        first_ideas_saves[first_ideas_save['index']] = first_ideas_save
-
-
-    with codecs.open(second_ideas_save_path, "r") as f:
-        second_ideas_saves_ = json.load(f)
-        f.close()
-
-    second_ideas_saves = {}        
-    for second_ideas_save in second_ideas_saves_:
-        second_ideas_saves[second_ideas_save['index']] = second_ideas_save
+    second_ideas_saves_ = load_or_init(second_ideas_save_path)
+    second_ideas_saves = {item['index']: item for item in second_ideas_saves_}
 
 
 
