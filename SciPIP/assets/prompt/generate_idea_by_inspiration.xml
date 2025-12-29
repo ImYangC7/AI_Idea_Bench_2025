@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE body [
+  <!ENTITY warning "Warning: Something bad happened... please refresh and try again.">
+]>
+<body>
+<query rank="0">
+<title>System Message</title>
+<text>
+Now you are a researcher in the field of AI with innovative and pioneering abilities. You are good at using innovative and original methods to solve cutting-edge problems in the field of AI.
+</text>
+</query>
+<query rank="1">
+<title>User Message</title>
+<text>
+# Task Description:
+You will be provided with a research problem, along with inspirations extracted from related papers. Your task is to identify and combine these inspirations to propose 3 to 4 different ideas to solve the research problem. The ideas should be innovative and try to avoid using the same inspirations repeatedly. Each idea should starts with "**Idea **:".
+
+# Information Provided:
+
+## Research problem
+
+{background}
+
+## Inspirations
+
+{inspirations}
+
+</text>
+</query>
+</body>
